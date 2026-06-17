@@ -106,3 +106,13 @@ function QuantumLib.get_active_state(card)
     local key = card.quantum.active or card.quantum.primary
     return QuantumLib.get_state(card, key)
 end
+
+function QuantumLib.has_enhancement(card, key)
+    assert(type(key) == "string",
+        ("QuantumLib.has_enhancement: key must be a string, got %s"):format(type(key)))
+    if not card.quantum then return false end
+    if card.quantum.mode == "cycle" then
+        return card.quantum.active == key
+    end
+    return card.quantum.states[key] ~= nil
+end

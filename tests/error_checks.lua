@@ -225,6 +225,58 @@ end)
 test("register_stack_rule / owner with no derivable key",
     function() QuantumLib.register_stack_rule({}, { m_steel = { extra_states = { "m_gold" } } }) end)
 
+-- ── has_enhancement ─────────────────────────────────────────────────────────
+
+test("has_enhancement / non-string key",
+    function() QuantumLib.has_enhancement({}, 42) end)
+
+test_ok("has_enhancement / non-quantum card returns false", function()
+    local result = QuantumLib.has_enhancement({ ability = {} }, "m_steel")
+    assert(result == false, "expected false, got " .. tostring(result))
+end)
+
+test_ok("has_enhancement / stack: present states return true", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+        assert(QuantumLib.has_enhancement(card, "__ql_test_a") == true, "primary should return true")
+        assert(QuantumLib.has_enhancement(card, "__ql_test_b") == true, "secondary should return true")
+    end)
+end)
+
+test_ok("has_enhancement / stack: absent key returns false", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+        assert(QuantumLib.has_enhancement(card, "m_steel") == false, "unregistered key should return false")
+    end)
+end)
+
+test_ok("has_enhancement / cycle: active state returns true", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "cycle", initial = "__ql_test_a" })
+        assert(QuantumLib.has_enhancement(card, "__ql_test_a") == true, "active state should return true")
+    end)
+end)
+
+test_ok("has_enhancement / cycle: inactive state returns false", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "cycle", initial = "__ql_test_a" })
+        assert(QuantumLib.has_enhancement(card, "__ql_test_b") == false, "inactive cycle state should return false")
+    end)
+end)
+
+test_ok("has_enhancement / superposition: all states return true", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "superposition" })
+        assert(QuantumLib.has_enhancement(card, "__ql_test_a") == true)
+        assert(QuantumLib.has_enhancement(card, "__ql_test_b") == true)
+    end)
+end)
+
 -- ── Summary ─────────────────────────────────────────────────────────────────
 
 print(("[QuantumLib:test] ====== Done: %d passed, %d failed ======"):format(_pass, _fail))
