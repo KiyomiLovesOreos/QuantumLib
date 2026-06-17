@@ -4,7 +4,14 @@ function QuantumLib.register_effect_gate(center_key, fields)
     assert(type(center_key) == "string",
         "QuantumLib.register_effect_gate: center_key must be a string")
     assert(type(fields) == "table" and #fields > 0,
-        "QuantumLib.register_effect_gate: fields must be a non-empty list")
+        "QuantumLib.register_effect_gate: fields must be a non-empty list of strings")
+    for i, f in ipairs(fields) do
+        assert(type(f) == "string",
+            ("QuantumLib.register_effect_gate: fields[%d] must be a string, got %s"):format(i, type(f)))
+    end
+    if QuantumLib._effect_gates[center_key] then
+        print(("[QuantumLib] register_effect_gate: overwriting existing effect gate for '%s'"):format(center_key))
+    end
     local set = {}
     for _, f in ipairs(fields) do set[f] = true end
     QuantumLib._effect_gates[center_key] = { fields = set }

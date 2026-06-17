@@ -11,6 +11,8 @@ end
 QuantumLib.deep_copy = deep_copy
 
 function QuantumLib.build_card_ability(center)
+    assert(type(center) == "table" and center.key,
+        "QuantumLib.build_card_ability: center must be a SMODS center object with a .key field")
     local config = center.config or {}
     return {
         name = center.name,
@@ -36,9 +38,12 @@ function QuantumLib.make_quantum(card, opts)
     assert(opts and opts.states and #opts.states > 0,
         "QuantumLib.make_quantum: opts.states must be a non-empty list of center keys")
 
+    assert(not card.quantum,
+        "QuantumLib.make_quantum: card already has quantum data — set card.quantum = nil before calling make_quantum again")
+
     local mode = opts.mode or "cycle"
     assert(mode == "cycle" or mode == "superposition" or mode == "stack",
-        "QuantumLib.make_quantum: mode must be 'cycle', 'superposition', or 'stack'")
+        ("QuantumLib.make_quantum: mode must be 'cycle', 'superposition', or 'stack', got '%s'"):format(tostring(mode)))
 
     local states = {}
     for _, key in ipairs(opts.states) do

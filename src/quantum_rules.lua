@@ -127,9 +127,22 @@ end
 
 function QuantumLib.register_stack_rule(owner, rules)
     assert(owner ~= nil, "QuantumLib.register_stack_rule: owner is required")
+    assert(type(rules) == "table" and next(rules),
+        "QuantumLib.register_stack_rule: rules must be a non-empty table")
+    for center_key, spec in pairs(rules) do
+        assert(type(center_key) == "string",
+            ("QuantumLib.register_stack_rule: rules key must be a string, got %s"):format(type(center_key)))
+        assert(type(spec) == "table" and type(spec.extra_states) == "table",
+            ("QuantumLib.register_stack_rule: rules['%s'].extra_states must be a table"):format(tostring(center_key)))
+        for i, extra in ipairs(spec.extra_states) do
+            assert(type(extra) == "string",
+                ("QuantumLib.register_stack_rule: rules['%s'].extra_states[%d] must be a string, got %s"):format(
+                    tostring(center_key), i, type(extra)))
+        end
+    end
 
     local provider_key = QuantumLib._stack_rule_provider_key(owner)
-    assert(provider_key, "QuantumLib.register_stack_rule: could not derive a provider_key from owner")
+    assert(provider_key, "QuantumLib.register_stack_rule: could not derive a provider_key from owner — owner must be a Card instance (from add_to_deck) or a SMODS object with a .key field")
 
     if not QuantumLib._stack_rule_specs[provider_key] then
         QuantumLib._stack_rule_specs[provider_key] = rules
