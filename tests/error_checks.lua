@@ -277,6 +277,42 @@ test_ok("has_enhancement / superposition: all states return true", function()
     end)
 end)
 
+-- ── cached_enhancements read-only proxy ─────────────────────────────────────
+
+test("cached_enhancements / write attempt errors", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+        QuantumLib.enable_stack_visibility()
+        local enhs = SMODS.get_enhancements(card)
+        enhs["m_steel"] = true
+    end)
+end)
+
+test_ok("cached_enhancements / read and pairs work on proxy", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+        QuantumLib.enable_stack_visibility()
+        local enhs = SMODS.get_enhancements(card)
+        assert(enhs["__ql_test_a"] == true, "read should work")
+        local count = 0
+        for k, _ in pairs(enhs) do count = count + 1 end
+        assert(count == 2, "pairs should iterate both states, got " .. count)
+    end)
+end)
+
+test_ok("cached_enhancements / same proxy returned on second call", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+        QuantumLib.enable_stack_visibility()
+        local a = SMODS.get_enhancements(card)
+        local b = SMODS.get_enhancements(card)
+        assert(a == b, "cache should return the same proxy table on repeated calls")
+    end)
+end)
+
 -- ── Summary ─────────────────────────────────────────────────────────────────
 
 print(("[QuantumLib:test] ====== Done: %d passed, %d failed ======"):format(_pass, _fail))

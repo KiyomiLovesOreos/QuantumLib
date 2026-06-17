@@ -118,8 +118,13 @@ function QuantumLib.enable_stack_visibility()
             end
             local enhancements = {}
             for key, _ in pairs(card.quantum.states) do
-                enhancements[key] = true
+                rawset(enhancements, key, true)
             end
+            setmetatable(enhancements, {
+                __newindex = function(_, k, _)
+                    error(("QuantumLib: attempted to write key '%s' to the enhancements table returned by SMODS.get_enhancements — this table is read-only for quantum stack cards"):format(tostring(k)), 2)
+                end,
+            })
             card.quantum.cached_enhancements = enhancements
             return enhancements
         end
