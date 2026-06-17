@@ -423,6 +423,48 @@ test_ok("remove_state / add then remove round-trips cleanly", function()
     end)
 end)
 
+-- ── get_enhancement_tally ───────────────────────────────────────────────────
+
+test("get_enhancement_tally / non-string key",
+    function() QuantumLib.get_enhancement_tally(42) end)
+
+test("get_enhancement_tally / invalid area (string)",
+    function() QuantumLib.get_enhancement_tally("m_steel", "not_an_area") end)
+
+test("get_enhancement_tally / invalid area (table without .cards)",
+    function() QuantumLib.get_enhancement_tally("m_steel", {}) end)
+
+test_ok("get_enhancement_tally / counts quantum and vanilla cards in area", function()
+    with_fake_centers(function()
+        local q_card = { config = { center = { set = "Enhanced", key = "__ql_test_a" }, center_key = "__ql_test_a" }, ability = {} }
+        G.P_CENTERS["__ql_test_a"].set = "Enhanced"
+        QuantumLib.make_quantum(q_card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+
+        local vanilla_with = { config = { center = { key = "__ql_test_b", set = "Enhanced" } }, ability = { set = "Enhanced" } }
+        local vanilla_without = { config = { center = { key = "__ql_test_a", set = "Enhanced" } }, ability = { set = "Enhanced" } }
+
+        local original_has = SMODS.has_enhancement
+        SMODS.has_enhancement = function(card, key)
+            if card == vanilla_with then return key == "__ql_test_b" end
+            return false
+        end
+
+        local area = { cards = { q_card, vanilla_with, vanilla_without } }
+        local tally_a = QuantumLib.get_enhancement_tally("__ql_test_a", area)
+        local tally_b = QuantumLib.get_enhancement_tally("__ql_test_b", area)
+
+        SMODS.has_enhancement = original_has
+
+        assert(tally_a == 1, "only q_card has __ql_test_a, got " .. tally_a)
+        assert(tally_b == 2, "q_card and vanilla_with have __ql_test_b, got " .. tally_b)
+    end)
+end)
+
+test_ok("get_enhancement_tally / empty area returns 0", function()
+    local count = QuantumLib.get_enhancement_tally("m_steel", { cards = {} })
+    assert(count == 0, "empty area should return 0, got " .. count)
+end)
+
 -- ── stack_enhancement ───────────────────────────────────────────────────────
 
 test("stack_enhancement / non-string key",

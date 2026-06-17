@@ -161,6 +161,32 @@ function QuantumLib.remove_state(card, key)
     QuantumLib.recompute_stack(card)
 end
 
+function QuantumLib.get_enhancement_tally(key, area)
+    assert(type(key) == "string",
+        ("QuantumLib.get_enhancement_tally: key must be a string, got %s"):format(type(key)))
+
+    local cards
+    if area ~= nil then
+        assert(type(area) == "table" and type(area.cards) == "table",
+            "QuantumLib.get_enhancement_tally: area must be a CardArea with a .cards list, or nil to search all playing cards")
+        cards = area.cards
+    else
+        assert(G and G.playing_cards,
+            "QuantumLib.get_enhancement_tally: G.playing_cards is not available — pass an explicit area, or call this during gameplay")
+        cards = G.playing_cards
+    end
+
+    local count = 0
+    for _, card in ipairs(cards) do
+        if card.quantum then
+            if QuantumLib.has_enhancement(card, key) then count = count + 1 end
+        else
+            if SMODS.has_enhancement(card, key) then count = count + 1 end
+        end
+    end
+    return count
+end
+
 function QuantumLib.stack_enhancement(card, key)
     assert(type(key) == "string",
         ("QuantumLib.stack_enhancement: key must be a string, got %s"):format(type(key)))
