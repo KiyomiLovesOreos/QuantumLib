@@ -53,7 +53,7 @@ function QuantumLib.recompute_stack(card)
     card.quantum._badge_names = nil
     card.quantum._generation = (card.quantum._generation or 0) + 1
 
-    local primary = QuantumLib.get_state(card, card.quantum.primary)
+    local primary = card.quantum.states[card.quantum.primary]
     local rules = QuantumLib.STACK_MERGE_RULES
 
     for k in pairs(_sums) do _sums[k] = nil end
