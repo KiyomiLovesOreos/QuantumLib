@@ -1,4 +1,8 @@
 QuantumLibDemo = SMODS.current_mod
+QuantumLibDemo.config = QuantumLibDemo.config or {}
+if QuantumLibDemo.config.show_debug_jokers == nil then
+    QuantumLibDemo.config.show_debug_jokers = true
+end
 
 local mod_path = QuantumLibDemo.path
 assert(load(NFS.read(mod_path .. "src/j_enhancer.lua"), "=[QuantumLibDemo] src/j_enhancer.lua"))()
@@ -19,6 +23,15 @@ QuantumLibDemo.config_tab = function()
                     w = 8,
                     ref_table = QuantumLibDemo.config,
                     ref_value = "stack_on_enhance",
+                }),
+            } },
+            { n = G.UIT.R, config = { align = "cm", padding = 0.05 }, nodes = {
+                create_toggle({
+                    label = "Show debug jokers and Catalyst Tarot",
+                    label_scale = 0.4,
+                    w = 8,
+                    ref_table = QuantumLibDemo.config,
+                    ref_value = "show_debug_jokers",
                 }),
             } },
         },

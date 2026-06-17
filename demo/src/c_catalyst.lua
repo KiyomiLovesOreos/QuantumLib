@@ -16,6 +16,9 @@ SMODS.Consumable {
     pos = { x = 0, y = 0 },
     atlas = "Tarot",
     prefix_config = { atlas = false },
+    in_pool = function(self)
+        return QuantumLibDemo.config.show_debug_jokers ~= false
+    end,
     use = function(self, card, area, copier)
         local target = G.hand.highlighted[1]
         G.E_MANAGER:add_event(Event({

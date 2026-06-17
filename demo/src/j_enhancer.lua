@@ -18,6 +18,9 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     atlas = "Joker",
     prefix_config = { atlas = false },
+    in_pool = function(self)
+        return QuantumLibDemo.config.show_debug_jokers ~= false
+    end,
     add_to_deck = function(self, card, from_debuff)
         local bonus_mult_card = G.playing_cards[1]
         if bonus_mult_card then

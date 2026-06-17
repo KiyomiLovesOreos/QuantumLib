@@ -138,15 +138,6 @@ function QuantumLib.enable_stack_tooltip()
 
     local original_generate_UIBox_ability_table = Card.generate_UIBox_ability_table
     function Card:generate_UIBox_ability_table(vars_only)
-        if self.quantum and self.quantum.mode == "stack" and not self.debuff then
-            local gen  = self.quantum._generation
-            local slot = vars_only and "v" or "f"
-            local cache = self.quantum._tooltip_cache
-            if cache and cache.gen == gen and cache[slot] then
-                return cache[slot]
-            end
-        end
-
         local full_UI_table = original_generate_UIBox_ability_table(self, vars_only)
         if self.quantum and self.quantum.mode == "stack" and type(full_UI_table) == "table" then
             local order = self.quantum.order or {}
@@ -171,15 +162,6 @@ function QuantumLib.enable_stack_tooltip()
                         full_UI_table.name = saved_name
                     end
                 end
-
-                local gen  = self.quantum._generation
-                local slot = vars_only and "v" or "f"
-                local cache = self.quantum._tooltip_cache
-                if not cache or cache.gen ~= gen then
-                    cache = { gen = gen }
-                    self.quantum._tooltip_cache = cache
-                end
-                cache[slot] = full_UI_table
             end
 
             local saved_ability = self.ability

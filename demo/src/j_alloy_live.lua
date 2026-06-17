@@ -15,7 +15,9 @@ SMODS.Joker {
     pos = { x = 0, y = 0 },
     atlas = "Joker",
     prefix_config = { atlas = false },
-
+    in_pool = function(self)
+        return QuantumLibDemo.config.show_debug_jokers ~= false
+    end,
     add_to_deck = function(self, card, from_debuff)
         QuantumLib.register_stack_rule(self, {
             m_steel = { extra_states = { "m_gold" } },
