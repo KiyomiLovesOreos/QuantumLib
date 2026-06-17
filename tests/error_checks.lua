@@ -423,6 +423,69 @@ test_ok("remove_state / add then remove round-trips cleanly", function()
     end)
 end)
 
+-- ── stack_enhancement ───────────────────────────────────────────────────────
+
+test("stack_enhancement / non-string key",
+    function() QuantumLib.stack_enhancement({}, 42) end)
+
+test("stack_enhancement / unknown center",
+    function() QuantumLib.stack_enhancement({}, "__ql_no_such") end)
+
+test("stack_enhancement / non-Enhanced center", function()
+    G.P_CENTERS["__ql_base"] = { key = "__ql_base", config = {}, name = "Base", effect = "Base", set = "Base" }
+    local ok, err = pcall(QuantumLib.stack_enhancement,
+        { config = { center = {}, center_key = "__ql_test_a" }, ability = {} }, "__ql_base")
+    G.P_CENTERS["__ql_base"] = nil
+    if ok then error("stack_enhancement should have errored for a non-Enhanced center") end
+    error(err)
+end)
+
+test("stack_enhancement / no existing enhancement on card", function()
+    with_fake_centers(function()
+        local card = {
+            config = { center = { set = "Base" }, center_key = "__ql_base" },
+            ability = {},
+        }
+        QuantumLib.stack_enhancement(card, "__ql_test_a")
+    end)
+end)
+
+test_ok("stack_enhancement / bootstraps fresh stack from current enhancement", function()
+    with_fake_centers(function()
+        local card = { config = { center = { set = "Enhanced", key = "__ql_test_a" }, center_key = "__ql_test_a" }, ability = {} }
+        G.P_CENTERS["__ql_test_a"].set = "Enhanced"
+        local result = QuantumLib.stack_enhancement(card, "__ql_test_b")
+        assert(result == true, "should return true on success")
+        assert(card.quantum ~= nil, "should have quantum data")
+        assert(card.quantum.states["__ql_test_a"] ~= nil, "should have original state")
+        assert(card.quantum.states["__ql_test_b"] ~= nil, "should have new state")
+        assert(card.quantum.primary == "__ql_test_a", "primary should be original center")
+    end)
+end)
+
+test_ok("stack_enhancement / duplicate key returns false", function()
+    with_fake_centers(function()
+        local card = { config = { center = { set = "Enhanced", key = "__ql_test_a" }, center_key = "__ql_test_a" }, ability = {} }
+        G.P_CENTERS["__ql_test_a"].set = "Enhanced"
+        QuantumLib.stack_enhancement(card, "__ql_test_b")
+        local result = QuantumLib.stack_enhancement(card, "__ql_test_b")
+        assert(result == false, "duplicate add should return false")
+        assert(#card.quantum.order == 2, "order length should not change")
+    end)
+end)
+
+test_ok("stack_enhancement / adds to existing stack", function()
+    with_fake_centers(function()
+        G.P_CENTERS["__ql_test_c"] = { key = "__ql_test_c", config = {}, name = "TestC", effect = "TestC", set = "Enhanced" }
+        local card = { config = { center = { set = "Enhanced", key = "__ql_test_a" }, center_key = "__ql_test_a" }, ability = {} }
+        G.P_CENTERS["__ql_test_a"].set = "Enhanced"
+        QuantumLib.stack_enhancement(card, "__ql_test_b")
+        QuantumLib.stack_enhancement(card, "__ql_test_c")
+        assert(#card.quantum.order == 3, "should have 3 states")
+        G.P_CENTERS["__ql_test_c"] = nil
+    end)
+end)
+
 -- ── Summary ─────────────────────────────────────────────────────────────────
 
 print(("[QuantumLib:test] ====== Done: %d passed, %d failed ======"):format(_pass, _fail))

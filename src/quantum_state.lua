@@ -160,3 +160,47 @@ function QuantumLib.remove_state(card, key)
     card.ability.quantum_order = deep_copy(new_order)
     QuantumLib.recompute_stack(card)
 end
+
+function QuantumLib.stack_enhancement(card, key)
+    assert(type(key) == "string",
+        ("QuantumLib.stack_enhancement: key must be a string, got %s"):format(type(key)))
+    local center = G.P_CENTERS[key]
+    assert(center, ("QuantumLib.stack_enhancement: unknown center '%s'"):format(key))
+    assert(center.set == "Enhanced",
+        ("QuantumLib.stack_enhancement: '%s' is not an enhancement (set='%s') — stack_enhancement only works with Enhanced centers"):format(key, tostring(center.set)))
+
+    if card.quantum and card.quantum.mode == "stack" then
+        if card.quantum.states[key] then return false end
+
+        if key == "m_lucky" then
+            local new_order = { "m_lucky" }
+            for _, k in ipairs(card.quantum.order) do
+                new_order[#new_order + 1] = k
+            end
+            card.quantum = nil
+            card.ability.quantum_order = nil
+            card.ability.quantum_primary = nil
+            card.ability.quantum_live_rule_center = nil
+            QuantumLib.make_quantum(card, { states = new_order, primary = "m_lucky", mode = "stack" })
+        else
+            QuantumLib.add_state(card, key)
+        end
+        return true
+    end
+
+    assert(card.config and card.config.center and card.config.center.set == "Enhanced",
+        "QuantumLib.stack_enhancement: card does not have an existing enhancement — apply an enhancement first, or use make_quantum directly")
+    local current_key = card.config.center_key
+    if current_key == key then return false end
+
+    local primary, order
+    if key == "m_lucky" then
+        primary = "m_lucky"
+        order   = { "m_lucky", current_key }
+    else
+        primary = current_key
+        order   = { current_key, key }
+    end
+    QuantumLib.make_quantum(card, { states = order, primary = primary, mode = "stack" })
+    return true
+end
