@@ -116,3 +116,47 @@ function QuantumLib.has_enhancement(card, key)
     end
     return card.quantum.states[key] ~= nil
 end
+
+function QuantumLib.add_state(card, key)
+    assert(card.quantum, "QuantumLib.add_state: card has no quantum data (call make_quantum first)")
+    assert(card.quantum.mode == "stack",
+        ("QuantumLib.add_state: card is in '%s' mode — add_state only works for stack mode"):format(card.quantum.mode))
+    assert(type(key) == "string",
+        ("QuantumLib.add_state: key must be a string, got %s"):format(type(key)))
+    assert(not card.quantum.states[key],
+        ("QuantumLib.add_state: card already has state '%s'"):format(key))
+    assert(key ~= "m_lucky",
+        "QuantumLib.add_state: 'm_lucky' must be the primary state — to add Lucky Card, rebuild the stack with make_quantum using primary='m_lucky'")
+    local center = G.P_CENTERS[key]
+    assert(center, ("QuantumLib.add_state: unknown center '%s'"):format(key))
+
+    card.quantum.states[key] = {
+        key    = key,
+        center = center,
+        ability = QuantumLib.build_card_ability(center),
+    }
+    card.quantum.order[#card.quantum.order + 1] = key
+    card.ability.quantum_order = deep_copy(card.quantum.order)
+    QuantumLib.recompute_stack(card)
+end
+
+function QuantumLib.remove_state(card, key)
+    assert(card.quantum, "QuantumLib.remove_state: card has no quantum data (call make_quantum first)")
+    assert(card.quantum.mode == "stack",
+        ("QuantumLib.remove_state: card is in '%s' mode — remove_state only works for stack mode"):format(card.quantum.mode))
+    assert(type(key) == "string",
+        ("QuantumLib.remove_state: key must be a string, got %s"):format(type(key)))
+    assert(card.quantum.states[key],
+        ("QuantumLib.remove_state: card has no state '%s'"):format(key))
+    assert(key ~= card.quantum.primary,
+        ("QuantumLib.remove_state: cannot remove the primary state '%s' — assign card.quantum.primary to another state first, or use make_quantum to rebuild the stack"):format(key))
+
+    card.quantum.states[key] = nil
+    local new_order = {}
+    for _, k in ipairs(card.quantum.order) do
+        if k ~= key then new_order[#new_order + 1] = k end
+    end
+    card.quantum.order = new_order
+    card.ability.quantum_order = deep_copy(new_order)
+    QuantumLib.recompute_stack(card)
+end

@@ -313,6 +313,116 @@ test_ok("cached_enhancements / same proxy returned on second call", function()
     end)
 end)
 
+-- ── add_state ───────────────────────────────────────────────────────────────
+
+test("add_state / no quantum data",
+    function() QuantumLib.add_state({}, "m_steel") end)
+
+test("add_state / wrong mode (cycle)", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "cycle" })
+        QuantumLib.add_state(card, "__ql_test_a")
+    end)
+end)
+
+test("add_state / non-string key",
+    function()
+        local card = { quantum = { mode = "stack", states = {}, order = {}, primary = "x" } }
+        QuantumLib.add_state(card, 99)
+    end)
+
+test("add_state / duplicate state key", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+        QuantumLib.add_state(card, "__ql_test_b")
+    end)
+end)
+
+test("add_state / m_lucky rejected",
+    function()
+        local card = { quantum = { mode = "stack", states = {}, order = {}, primary = "x" } }
+        QuantumLib.add_state(card, "m_lucky")
+    end)
+
+test("add_state / unknown center key", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a" }, mode = "stack", primary = "__ql_test_a" })
+        QuantumLib.add_state(card, "__ql_no_such_center")
+    end)
+end)
+
+test_ok("add_state / valid add appends state and recomputes", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a" }, mode = "stack", primary = "__ql_test_a" })
+        QuantumLib.add_state(card, "__ql_test_b")
+        assert(card.quantum.states["__ql_test_b"] ~= nil, "state should exist after add")
+        assert(card.quantum.order[2] == "__ql_test_b", "order should contain new key")
+        assert(card.ability.quantum_order[2] == "__ql_test_b", "quantum_order on ability should be updated")
+    end)
+end)
+
+-- ── remove_state ─────────────────────────────────────────────────────────────
+
+test("remove_state / no quantum data",
+    function() QuantumLib.remove_state({}, "m_steel") end)
+
+test("remove_state / wrong mode (superposition)", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "superposition" })
+        QuantumLib.remove_state(card, "__ql_test_b")
+    end)
+end)
+
+test("remove_state / non-string key",
+    function()
+        local card = { quantum = { mode = "stack", states = { x = true }, order = { "x" }, primary = "x" } }
+        QuantumLib.remove_state(card, 99)
+    end)
+
+test("remove_state / key not in states", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+        QuantumLib.remove_state(card, "m_steel")
+    end)
+end)
+
+test("remove_state / cannot remove primary", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+        QuantumLib.remove_state(card, "__ql_test_a")
+    end)
+end)
+
+test_ok("remove_state / valid remove updates state and order", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+        QuantumLib.remove_state(card, "__ql_test_b")
+        assert(card.quantum.states["__ql_test_b"] == nil, "state should be gone")
+        assert(#card.quantum.order == 1, "order should have 1 entry")
+        assert(card.ability.quantum_order[1] == "__ql_test_a", "quantum_order on ability should reflect removal")
+    end)
+end)
+
+test_ok("remove_state / add then remove round-trips cleanly", function()
+    with_fake_centers(function()
+        local card = { config = { center = {} }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a" }, mode = "stack", primary = "__ql_test_a" })
+        QuantumLib.add_state(card, "__ql_test_b")
+        assert(#card.quantum.order == 2, "should have 2 states after add")
+        QuantumLib.remove_state(card, "__ql_test_b")
+        assert(#card.quantum.order == 1, "should have 1 state after remove")
+        assert(card.quantum.states["__ql_test_b"] == nil, "removed state should be gone")
+    end)
+end)
+
 -- ── Summary ─────────────────────────────────────────────────────────────────
 
 print(("[QuantumLib:test] ====== Done: %d passed, %d failed ======"):format(_pass, _fail))
