@@ -1,0 +1,11 @@
+{
+  "id": "QuantumLibDemo",
+  "name": "QuantumLib Demo",
+  "display_name": "QuantumLib Demo",
+  "author": ["Amolyte"],
+  "description": "Example jokers demonstrating the QuantumLib API.",
+  "prefix": "qlibdemo",
+  "main_file": "main.lua",
+  "version": "0.1.0",
+  "dependencies": ["Steamodded (>=1.0.0~BETA-1620a)", "QuantumLib (>=0.1.0)"]
+}

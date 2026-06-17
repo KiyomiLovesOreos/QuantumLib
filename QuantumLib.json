@@ -1,0 +1,11 @@
+{
+  "id": "QuantumLib",
+  "name": "QuantumLib",
+  "display_name": "QuantumLib",
+  "author": ["Amolyte"],
+  "description": "Independent per-card, per-state dynamic enhancement data and O(1) state switching for SMODS mods.",
+  "prefix": "qlib",
+  "main_file": "main.lua",
+  "version": "0.1.0",
+  "dependencies": ["Steamodded (>=1.0.0~BETA-1620a)"]
+}
