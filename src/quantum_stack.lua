@@ -51,6 +51,7 @@ function QuantumLib.recompute_stack(card)
 
     card.quantum.cached_enhancements = nil
     card.quantum._badge_names = nil
+    card.quantum._generation = (card.quantum._generation or 0) + 1
 
     local primary = QuantumLib.get_state(card, card.quantum.primary)
     local rules = QuantumLib.STACK_MERGE_RULES

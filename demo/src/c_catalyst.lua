@@ -31,6 +31,7 @@ SMODS.Consumable {
                 print(("[QuantumLibDemo] Catalyst pre-apply: gen=%d cache_set=%s")
                     :format(pre_gen, tostring(pre_cache)))
 
+                target.quantum = nil
                 target:set_ability(G.P_CENTERS.m_bonus)
                 QuantumLib.make_quantum(target, {
                     states = { "m_bonus", "m_mult" },
@@ -38,8 +39,8 @@ SMODS.Consumable {
                     mode = "stack",
                 })
 
-                print(("[QuantumLibDemo] Catalyst post-apply: gen=%d cache_set=%s (expect false)")
-                    :format(target.quantum._generation,
+                print(("[QuantumLibDemo] Catalyst post-apply: gen=%s cache_set=%s (expect false)")
+                    :format(tostring(target.quantum._generation),
                         tostring(target.quantum._tooltip_cache ~= nil)))
 
                 target:flip()
