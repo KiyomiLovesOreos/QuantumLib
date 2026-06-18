@@ -7,6 +7,17 @@ end
 
 local original_set_ability = Card.set_ability
 function Card:set_ability(center, initial, delay_sprites)
+    -- If a non-Enhancement center is being applied to any quantum card (Vampire,
+    -- consumables, debug tools etc.), clear quantum so hooks stop seeing stale state.
+    -- original_set_ability then handles sprites, enh_cache, deck tracking, debuff
+    -- re-evaluation — everything needed for a clean removal.
+    if not initial
+        and self.quantum
+        and center and center.set ~= "Enhanced"
+    then
+        self.quantum = nil
+    end
+
     if QuantumLibDemo.config.stack_on_enhance
         and not initial
         and center and center.set == "Enhanced"
@@ -22,7 +33,11 @@ function Card:set_ability(center, initial, delay_sprites)
         if not already_has then
             table.insert(order, center.key)
             if center.key == "m_lucky" then primary = "m_lucky" end
+            self.quantum = nil
             QuantumLib.make_quantum(self, { states = order, primary = primary, mode = "stack" })
+            -- Invalidate SMODS enhancement cache so get_enhancements, has_enhancement,
+            -- tooltip generation, and badge display all see the new stacked state.
+            SMODS.enh_cache:write(self, nil)
             return
         end
     end
