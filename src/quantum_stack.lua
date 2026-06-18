@@ -294,6 +294,153 @@ function QuantumLib.enable_stack_lucky_mult()
     end
 end
 
+function QuantumLib.enable_cycle_tooltip()
+    if QuantumLib._cycle_tooltip_enabled then return end
+    QuantumLib._cycle_tooltip_enabled = true
+
+    local original_generate = Card.generate_UIBox_ability_table
+    function Card:generate_UIBox_ability_table(vars_only)
+        local full_UI_table = original_generate(self, vars_only)
+        if self.quantum and self.quantum.mode == "cycle" and type(full_UI_table) == "table" then
+            if not self.debuff then
+                local saved_ability = self.ability
+                for _, key in ipairs(self.quantum.order) do
+                    if key ~= self.quantum.active then
+                        local state = self.quantum.states[key]
+                        self.ability = state.ability
+                        generate_card_ui(state.center, full_UI_table, nil, full_UI_table.card_type, nil, nil, nil, nil, self)
+                    end
+                end
+                self.ability = saved_ability
+            end
+        end
+        return full_UI_table
+    end
+end
+
+function QuantumLib.enable_cycle_badges()
+    if QuantumLib._cycle_badges_enabled then return end
+    QuantumLib._cycle_badges_enabled = true
+
+    local original_card_h_popup = G.UIDEF.card_h_popup
+    G.UIDEF.card_h_popup = function(card)
+        local ui = original_card_h_popup(card)
+        if card.quantum and card.quantum.mode == "cycle" and type(ui) == "table" then
+            local inner = ui.nodes[1].nodes[1].nodes[1]
+            local badges_row = inner.nodes[3]
+            if not badges_row then
+                badges_row = { n = G.UIT.R, config = { align = "cm", padding = 0.03 }, nodes = {} }
+                inner.nodes[3] = badges_row
+            end
+            for i = #badges_row.nodes, 1, -1 do table.remove(badges_row.nodes, i) end
+
+            local names = {}
+            for _, key in ipairs(card.quantum.order) do
+                names[#names + 1] = localize{ type = 'name_text', key = key, set = 'Enhanced' }
+            end
+            local active_center = card.quantum.states[card.quantum.active].center
+            table.insert(badges_row.nodes, create_badge(
+                names,
+                get_type_colour(active_center, card),
+                SMODS.get_card_type_text_colour('Enhanced', active_center, card),
+                1.2
+            ))
+        end
+        return ui
+    end
+end
+
+function QuantumLib.enable_cycle_deck_view()
+    if QuantumLib._cycle_deck_view_enabled then return end
+    QuantumLib._cycle_deck_view_enabled = true
+
+    local original_copy_card = copy_card
+    copy_card = function(other, ...)
+        local new_card = original_copy_card(other, ...)
+        if other.quantum and other.quantum.mode == "cycle" and not new_card.quantum then
+            QuantumLib.make_quantum(new_card, {
+                states  = other.quantum.order,
+                initial = other.quantum.active,
+                mode    = "cycle",
+            })
+            new_card.ability = new_card.quantum.states[new_card.quantum.active].ability
+        end
+        return new_card
+    end
+end
+
+function QuantumLib.enable_superposition_tooltip()
+    if QuantumLib._superposition_tooltip_enabled then return end
+    QuantumLib._superposition_tooltip_enabled = true
+
+    local original_generate = Card.generate_UIBox_ability_table
+    function Card:generate_UIBox_ability_table(vars_only)
+        local full_UI_table = original_generate(self, vars_only)
+        if self.quantum and self.quantum.mode == "superposition" and type(full_UI_table) == "table" then
+            if not self.debuff then
+                local saved_ability = self.ability
+                for _, key in ipairs(self.quantum.order) do
+                    local state = self.quantum.states[key]
+                    self.ability = state.ability
+                    generate_card_ui(state.center, full_UI_table, nil, full_UI_table.card_type, nil, nil, nil, nil, self)
+                end
+                self.ability = saved_ability
+            end
+        end
+        return full_UI_table
+    end
+end
+
+function QuantumLib.enable_superposition_badges()
+    if QuantumLib._superposition_badges_enabled then return end
+    QuantumLib._superposition_badges_enabled = true
+
+    local original_card_h_popup = G.UIDEF.card_h_popup
+    G.UIDEF.card_h_popup = function(card)
+        local ui = original_card_h_popup(card)
+        if card.quantum and card.quantum.mode == "superposition" and type(ui) == "table" then
+            local inner = ui.nodes[1].nodes[1].nodes[1]
+            local badges_row = inner.nodes[3]
+            if not badges_row then
+                badges_row = { n = G.UIT.R, config = { align = "cm", padding = 0.03 }, nodes = {} }
+                inner.nodes[3] = badges_row
+            end
+            for i = #badges_row.nodes, 1, -1 do table.remove(badges_row.nodes, i) end
+
+            local names = {}
+            for _, key in ipairs(card.quantum.order) do
+                names[#names + 1] = localize{ type = 'name_text', key = key, set = 'Enhanced' }
+            end
+            local first_center = card.quantum.states[card.quantum.order[1]].center
+            table.insert(badges_row.nodes, create_badge(
+                names,
+                get_type_colour(first_center, card),
+                SMODS.get_card_type_text_colour('Enhanced', first_center, card),
+                1.2
+            ))
+        end
+        return ui
+    end
+end
+
+function QuantumLib.enable_superposition_deck_view()
+    if QuantumLib._superposition_deck_view_enabled then return end
+    QuantumLib._superposition_deck_view_enabled = true
+
+    local original_copy_card = copy_card
+    copy_card = function(other, ...)
+        local new_card = original_copy_card(other, ...)
+        if other.quantum and other.quantum.mode == "superposition" and not new_card.quantum then
+            QuantumLib.make_quantum(new_card, {
+                states  = other.quantum.order,
+                initial = other.quantum.active,
+                mode    = "superposition",
+            })
+        end
+        return new_card
+    end
+end
+
 function QuantumLib.enable_cycle_persistence()
     if QuantumLib._cycle_persistence_enabled then return end
     QuantumLib._cycle_persistence_enabled = true
