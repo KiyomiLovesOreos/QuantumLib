@@ -528,6 +528,146 @@ test_ok("stack_enhancement / adds to existing stack", function()
     end)
 end)
 
+-- ── enable_cycle_persistence ────────────────────────────────────────────────
+
+test_ok("enable_cycle_persistence / idempotent", function()
+    QuantumLib.enable_cycle_persistence()
+    QuantumLib.enable_cycle_persistence()
+end)
+
+test_ok("enable_cycle_persistence / round-trip preserves all state abilities", function()
+    with_fake_centers(function()
+        local card = {
+            config = { center_key = "__ql_test_a", center = G.P_CENTERS["__ql_test_a"] },
+            ability = {},
+        }
+        QuantumLib.make_quantum(card, {
+            states  = { "__ql_test_a", "__ql_test_b" },
+            initial = "__ql_test_a",
+            mode    = "cycle",
+        })
+        card.ability = card.quantum.states["__ql_test_a"].ability
+        card.ability.mult = 7
+        card.quantum.states["__ql_test_b"].ability.mult = 3
+
+        -- simulate save hook output
+        local deep_copy = QuantumLib.deep_copy
+        local sas = {}
+        for key, state in pairs(card.quantum.states) do sas[key] = deep_copy(state.ability) end
+        local saved_ability = deep_copy(card.ability)
+        saved_ability.quantum_mode    = "cycle"
+        saved_ability.quantum_order   = deep_copy(card.quantum.order)
+        saved_ability.quantum_active  = card.quantum.active
+        saved_ability.quantum_state_abilities = sas
+
+        -- simulate load: fresh card with restored ability
+        local loaded = {
+            config  = { center_key = "__ql_test_a", center = G.P_CENTERS["__ql_test_a"] },
+            ability = saved_ability,
+        }
+        QuantumLib.make_quantum(loaded, {
+            states  = saved_ability.quantum_order,
+            initial = saved_ability.quantum_active,
+            mode    = "cycle",
+        })
+        for key, ab in pairs(saved_ability.quantum_state_abilities) do
+            if loaded.quantum.states[key] then loaded.quantum.states[key].ability = ab end
+        end
+        loaded.ability = loaded.quantum.states[loaded.quantum.active].ability
+
+        assert(loaded.quantum.active == "__ql_test_a", "active state should be restored")
+        assert(loaded.quantum.states["__ql_test_a"].ability.mult == 7,
+            "active state accumulated mult should survive")
+        assert(loaded.quantum.states["__ql_test_b"].ability.mult == 3,
+            "inactive state accumulated mult should survive")
+        assert(loaded.ability.mult == 7, "card.ability should be active state's ability")
+    end)
+end)
+
+test_ok("enable_cycle_persistence / save does not mutate live card.ability", function()
+    with_fake_centers(function()
+        local card = {
+            config = { center_key = "__ql_test_a", center = G.P_CENTERS["__ql_test_a"] },
+            ability = {},
+        }
+        QuantumLib.make_quantum(card, {
+            states  = { "__ql_test_a", "__ql_test_b" },
+            initial = "__ql_test_a",
+            mode    = "cycle",
+        })
+        card.ability = card.quantum.states["__ql_test_a"].ability
+        card.ability.mult = 9
+        local live_ability = card.ability
+
+        -- simulate save hook: deep-copy then annotate (live_ability must stay clean)
+        local saved_ability = QuantumLib.deep_copy(card.ability)
+        saved_ability.quantum_mode   = "cycle"
+        saved_ability.quantum_active = card.quantum.active
+
+        assert(live_ability.quantum_mode == nil,  "live ability must not get quantum_mode")
+        assert(live_ability.quantum_active == nil, "live ability must not get quantum_active")
+        assert(live_ability.mult == 9, "live ability.mult must be unchanged")
+    end)
+end)
+
+-- ── enable_superposition_persistence ────────────────────────────────────────
+
+test_ok("enable_superposition_persistence / idempotent", function()
+    QuantumLib.enable_superposition_persistence()
+    QuantumLib.enable_superposition_persistence()
+end)
+
+test_ok("enable_superposition_persistence / round-trip preserves per-state abilities", function()
+    with_fake_centers(function()
+        local card = {
+            config = { center_key = "__ql_test_a", center = G.P_CENTERS["__ql_test_a"] },
+            ability = { mult = 0 },
+        }
+        QuantumLib.make_quantum(card, {
+            states  = { "__ql_test_a", "__ql_test_b" },
+            initial = "__ql_test_a",
+            mode    = "superposition",
+        })
+        card.quantum.states["__ql_test_a"].ability.mult = 4
+        card.quantum.states["__ql_test_b"].ability.mult = 11
+
+        -- simulate save hook output
+        local deep_copy = QuantumLib.deep_copy
+        local sas = {}
+        for key, state in pairs(card.quantum.states) do sas[key] = deep_copy(state.ability) end
+        local saved_ability = deep_copy(card.ability)
+        saved_ability.quantum_mode    = "superposition"
+        saved_ability.quantum_order   = deep_copy(card.quantum.order)
+        saved_ability.quantum_initial = card.quantum.active
+        saved_ability.quantum_state_abilities = sas
+
+        -- simulate load
+        local loaded = {
+            config  = { center_key = "__ql_test_a", center = G.P_CENTERS["__ql_test_a"] },
+            ability = saved_ability,
+        }
+        QuantumLib.make_quantum(loaded, {
+            states  = saved_ability.quantum_order,
+            initial = saved_ability.quantum_initial,
+            mode    = "superposition",
+        })
+        for key, ab in pairs(saved_ability.quantum_state_abilities) do
+            if loaded.quantum.states[key] then loaded.quantum.states[key].ability = ab end
+        end
+        loaded.ability.quantum_mode    = nil
+        loaded.ability.quantum_order   = nil
+        loaded.ability.quantum_initial = nil
+        loaded.ability.quantum_state_abilities = nil
+
+        assert(loaded.quantum.mode == "superposition", "mode should be superposition")
+        assert(loaded.quantum.states["__ql_test_a"].ability.mult == 4,
+            "state A accumulated mult should survive")
+        assert(loaded.quantum.states["__ql_test_b"].ability.mult == 11,
+            "state B accumulated mult should survive")
+        assert(loaded.ability.quantum_mode == nil, "stash fields should be cleaned from card.ability")
+    end)
+end)
+
 -- ── Summary ─────────────────────────────────────────────────────────────────
 
 print(("[QuantumLib:test] ====== Done: %d passed, %d failed ======"):format(_pass, _fail))

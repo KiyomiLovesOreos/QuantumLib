@@ -293,3 +293,94 @@ function QuantumLib.enable_stack_lucky_mult()
         return ret
     end
 end
+
+function QuantumLib.enable_cycle_persistence()
+    if QuantumLib._cycle_persistence_enabled then return end
+    QuantumLib._cycle_persistence_enabled = true
+
+    local deep_copy = QuantumLib.deep_copy
+
+    local original_save = Card.save
+    function Card:save(...)
+        local ret = original_save(self, ...)
+        if self.quantum and self.quantum.mode == "cycle" then
+            local sas = {}
+            for key, state in pairs(self.quantum.states) do
+                sas[key] = deep_copy(state.ability)
+            end
+            local saved_ability = deep_copy(ret.ability)
+            saved_ability.quantum_mode = "cycle"
+            saved_ability.quantum_order = deep_copy(self.quantum.order)
+            saved_ability.quantum_active = self.quantum.active
+            saved_ability.quantum_state_abilities = sas
+            ret.ability = saved_ability
+        end
+        return ret
+    end
+
+    local original_load = Card.load
+    function Card:load(...)
+        local ret = original_load(self, ...)
+        if not self.quantum and self.ability and self.ability.quantum_mode == "cycle" then
+            QuantumLib.make_quantum(self, {
+                states  = self.ability.quantum_order,
+                initial = self.ability.quantum_active,
+                mode    = "cycle",
+            })
+            for key, ab in pairs(self.ability.quantum_state_abilities) do
+                if self.quantum.states[key] then
+                    self.quantum.states[key].ability = ab
+                end
+            end
+            self.ability = self.quantum.states[self.quantum.active].ability
+        end
+        return ret
+    end
+end
+
+function QuantumLib.enable_superposition_persistence()
+    if QuantumLib._superposition_persistence_enabled then return end
+    QuantumLib._superposition_persistence_enabled = true
+
+    local deep_copy = QuantumLib.deep_copy
+
+    local original_save = Card.save
+    function Card:save(...)
+        local ret = original_save(self, ...)
+        if self.quantum and self.quantum.mode == "superposition" then
+            local sas = {}
+            for key, state in pairs(self.quantum.states) do
+                sas[key] = deep_copy(state.ability)
+            end
+            local saved_ability = deep_copy(ret.ability)
+            saved_ability.quantum_mode = "superposition"
+            saved_ability.quantum_order = deep_copy(self.quantum.order)
+            saved_ability.quantum_initial = self.quantum.active
+            saved_ability.quantum_state_abilities = sas
+            ret.ability = saved_ability
+        end
+        return ret
+    end
+
+    local original_load = Card.load
+    function Card:load(...)
+        local ret = original_load(self, ...)
+        if not self.quantum and self.ability and self.ability.quantum_mode == "superposition" then
+            QuantumLib.make_quantum(self, {
+                states  = self.ability.quantum_order,
+                initial = self.ability.quantum_initial,
+                mode    = "superposition",
+            })
+            for key, ab in pairs(self.ability.quantum_state_abilities) do
+                if self.quantum.states[key] then
+                    self.quantum.states[key].ability = ab
+                end
+            end
+            self.ability.quantum_mode = nil
+            self.ability.quantum_order = nil
+            self.ability.quantum_initial = nil
+            self.ability.quantum_state_abilities = nil
+        end
+        return ret
+    end
+end

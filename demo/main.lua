@@ -27,7 +27,7 @@ QuantumLibDemo.config_tab = function()
             } },
             { n = G.UIT.R, config = { align = "cm", padding = 0.05 }, nodes = {
                 create_toggle({
-                    label = "Show debug jokers and Catalyst Tarot",
+                    label = "Show debug items",
                     label_scale = 0.4,
                     w = 8,
                     ref_table = QuantumLibDemo.config,
@@ -38,6 +38,17 @@ QuantumLibDemo.config_tab = function()
     }
 end
 
+local _orig_collection_pool = SMODS.collection_pool
+SMODS.collection_pool = function(_base_pool)
+    local pool = _orig_collection_pool(_base_pool)
+    if QuantumLibDemo.config.show_debug_jokers ~= false then return pool end
+    local filtered = {}
+    for _, v in ipairs(pool) do
+        if v.mod ~= QuantumLibDemo then filtered[#filtered + 1] = v end
+    end
+    return filtered
+end
+
 QuantumLib.enable_stack_visibility()
 QuantumLib.enable_stack_enhancement_calculate()
 QuantumLib.enable_stack_lucky_mult()
@@ -45,3 +56,5 @@ QuantumLib.enable_stack_tooltip()
 QuantumLib.enable_stack_badges()
 QuantumLib.enable_stack_deck_view()
 QuantumLib.enable_stack_persistence()
+QuantumLib.enable_cycle_persistence()
+QuantumLib.enable_superposition_persistence()
