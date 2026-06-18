@@ -528,6 +528,77 @@ test_ok("stack_enhancement / adds to existing stack", function()
     end)
 end)
 
+-- ── swap_primary ────────────────────────────────────────────────────────────
+
+test("swap_primary / no quantum data",
+    function() QuantumLib.swap_primary({ ability = {} }, "__ql_test_a") end)
+
+test("swap_primary / wrong mode",
+    function()
+        with_fake_centers(function()
+            local card = { config = { center = {} }, ability = {} }
+            QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "cycle" })
+            QuantumLib.swap_primary(card, "__ql_test_b")
+        end)
+    end)
+
+test("swap_primary / non-string key",
+    function()
+        with_fake_centers(function()
+            local card = { config = { center = {} }, ability = {} }
+            QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+            QuantumLib.swap_primary(card, 99)
+        end)
+    end)
+
+test("swap_primary / key not in states",
+    function()
+        with_fake_centers(function()
+            local card = { config = { center = {} }, ability = {} }
+            QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+            QuantumLib.swap_primary(card, "m_steel")
+        end)
+    end)
+
+test("swap_primary / already primary",
+    function()
+        with_fake_centers(function()
+            local card = { config = { center = {} }, ability = {} }
+            QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+            QuantumLib.swap_primary(card, "__ql_test_a")
+        end)
+    end)
+
+test("swap_primary / m_lucky in stack blocks swap to non-lucky",
+    function()
+        local card = { config = { center = G.P_CENTERS["m_lucky"], center_key = "m_lucky" }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "m_lucky", "m_bonus" }, mode = "stack", primary = "m_lucky" })
+        QuantumLib.swap_primary(card, "m_bonus")
+    end)
+
+test_ok("swap_primary / updates primary, center, and recomputes", function()
+    with_fake_centers(function()
+        local card = { config = { center = G.P_CENTERS["__ql_test_a"], center_key = "__ql_test_a" }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+        QuantumLib.swap_primary(card, "__ql_test_b")
+        assert(card.quantum.primary == "__ql_test_b", "primary should be updated")
+        assert(card.config.center_key == "__ql_test_b", "config.center_key should be updated")
+        assert(card.config.center == G.P_CENTERS["__ql_test_b"], "config.center should be updated")
+        assert(card.ability.quantum_primary == "__ql_test_b", "ability.quantum_primary should be updated")
+    end)
+end)
+
+test_ok("swap_primary / then remove_state on old primary works", function()
+    with_fake_centers(function()
+        local card = { config = { center = G.P_CENTERS["__ql_test_a"], center_key = "__ql_test_a" }, ability = {} }
+        QuantumLib.make_quantum(card, { states = { "__ql_test_a", "__ql_test_b" }, mode = "stack", primary = "__ql_test_a" })
+        QuantumLib.swap_primary(card, "__ql_test_b")
+        QuantumLib.remove_state(card, "__ql_test_a")
+        assert(#card.quantum.order == 1, "should have 1 state after remove")
+        assert(card.quantum.states["__ql_test_a"] == nil, "old primary should be gone")
+    end)
+end)
+
 -- ── enable_cycle_persistence ────────────────────────────────────────────────
 
 test_ok("enable_cycle_persistence / idempotent", function()

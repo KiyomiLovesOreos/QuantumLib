@@ -149,7 +149,7 @@ function QuantumLib.remove_state(card, key)
     assert(card.quantum.states[key],
         ("QuantumLib.remove_state: card has no state '%s'"):format(key))
     assert(key ~= card.quantum.primary,
-        ("QuantumLib.remove_state: cannot remove the primary state '%s' — assign card.quantum.primary to another state first, or use make_quantum to rebuild the stack"):format(key))
+        ("QuantumLib.remove_state: cannot remove the primary state '%s' — call swap_primary to assign a different primary first, or use make_quantum to rebuild the stack"):format(key))
 
     card.quantum.states[key] = nil
     local new_order = {}
@@ -158,6 +158,26 @@ function QuantumLib.remove_state(card, key)
     end
     card.quantum.order = new_order
     card.ability.quantum_order = deep_copy(new_order)
+    QuantumLib.recompute_stack(card)
+end
+
+function QuantumLib.swap_primary(card, key)
+    assert(card.quantum, "QuantumLib.swap_primary: card has no quantum data (call make_quantum first)")
+    assert(card.quantum.mode == "stack",
+        ("QuantumLib.swap_primary: card is in '%s' mode — swap_primary only works for stack mode"):format(card.quantum.mode))
+    assert(type(key) == "string",
+        ("QuantumLib.swap_primary: key must be a string, got %s"):format(type(key)))
+    assert(card.quantum.states[key],
+        ("QuantumLib.swap_primary: card has no state '%s'"):format(key))
+    assert(key ~= card.quantum.primary,
+        ("QuantumLib.swap_primary: '%s' is already the primary state"):format(key))
+    assert(not (card.quantum.states["m_lucky"] and key ~= "m_lucky"),
+        "QuantumLib.swap_primary: cannot change primary when 'm_lucky' is in the stack — Lucky Card must always be primary")
+
+    card.quantum.primary = key
+    card.config.center = card.quantum.states[key].center
+    card.config.center_key = key
+    card.ability.quantum_primary = key
     QuantumLib.recompute_stack(card)
 end
 
